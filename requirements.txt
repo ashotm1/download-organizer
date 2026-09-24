@@ -1,0 +1,5 @@
+watchdog>=6.0
+pymupdf>=1.24
+pystray>=0.19
+pillow>=10.0
+windows-toasts>=1.3

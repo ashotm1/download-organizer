@@ -1,0 +1,52 @@
+# Download Organizer configuration. Paths may use forward slashes.
+
+[paths]
+downloads = "~/Downloads"
+state_dir = "state"            # logs, move history, learned examples (relative to project dir)
+
+[folders]
+# Every subfolder of these roots whose name matches an include pattern becomes a destination.
+roots = ["~/Documents/Courses"]
+# Course-code folders: cs101, math201, bio110, ...
+include_patterns = ['^[A-Za-z]{2,5}\d{3}$']
+# Additional destination folders (full paths), e.g. course folders without a code-style name.
+extra = [
+    # "~/Documents/Physics Lab",
+]
+
+# Extra phrases that identify a folder in a document (case-insensitive, whole words).
+[folders.aliases]
+# ger101 = ["German 101"]
+
+# Short and distinctive: what the course is, and what sets it apart from the others.
+[folders.descriptions]
+cs101 = "CS 101 Introduction to Programming, in Python: variables, loops, functions, lists."
+math201 = "MATH 201 Linear Algebra: matrices, vectors, eigenvalues."
+ger101 = "GER 101 Elementary German I: anything related to German goes here."
+
+# The model is chosen only on the command line: default Claude Haiku (via your Claude subscription;
+# sends page text to Anthropic). Other: --backend ollama [--model qwen2.5:3b], or --model sonnet.
+[claude]
+exe = ""               # path to claude.exe; empty = auto-detect (PATH, then the VS Code extension)
+timeout_s = 90
+
+[ollama]
+url = "http://127.0.0.1:11434"   # not "localhost": Windows tries IPv6 first and stalls
+timeout_s = 180               # CPU-only inference can be slow on the first call
+keep_alive = "30m"            # keep the model loaded between downloads
+num_ctx = 4096
+
+[detection]
+extensions = [".pdf"]
+# "strict": only files the browser finished downloading (renamed from .crdownload/.part).
+# "motw":   also any new file carrying the internet Mark of the Web (catches more, including copies).
+mode = "strict"
+
+[behavior]
+auto_open = true              # always open the PDF, from its final location when it was moved
+open_fallback_s = 20          # if sorting takes longer than this, open it from Downloads right away
+auto_move_on_llm_alone = true  # Claude may auto-move on its own high confidence; the local model never does
+pages_to_read = 2
+max_chars = 2000
+min_text_chars = 40           # below this the PDF is treated as having no text layer (scanned)
+ui = "toast"                  # "toast" (Windows notifications) or "popup" (small always-on-top windows)
