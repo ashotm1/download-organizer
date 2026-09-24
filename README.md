@@ -1,75 +1,81 @@
 # Download Organizer
 
-A background tray app that watches `Downloads`. When the browser finishes downloading a PDF, it reads the first pages, decides which course folder it belongs in (e.g. cs101, math201) and moves it there, asking first whenever it is not sure. The model is **Claude Haiku**, called through the Claude Code CLI on your Claude subscription. No API key is needed, but each PDF's first-page text is sent to Anthropic. A local model is available with a flag, `--backend ollama` ([Ollama](https://ollama.com) with `qwen2.5:3b`). There is no automatic fallback: only the command-line flag changes the model.
+Download Organizer keeps your Downloads folder from turning into a pile of PDFs. It runs quietly in the Windows tray, and whenever your browser finishes downloading a PDF it reads the first page or two, asks an LLM which of your folders the file belongs in, and moves it there. If the model isn't sure, or nothing fits, the file stays where it is and you get a notification asking what to do.
+
+It was built for course material (lecture slides, homework, assignments going into per-course folders), but it works for any set of folders you can describe in a sentence. It currently works on Windows only.
+
+## How it works
+
+The model needs enough context about your folders to decide well. For every destination folder it gets:
+
+- a short description of what the folder is for, e.g. "CS 101 Intro to Programming, in Python: loops, functions, lists"
+- a few example file names that already live there
+- the files you've recently filed yourself, so it picks up your habits
+
+Then it gets the downloaded document (file name, title, where it was downloaded from, and the first page of text) and has to pick exactly one folder from the list, or answer NONE. It also has to quote the words from the document that justify its choice. If the quote isn't actually in the document, the answer isn't trusted.
+
+What happens next:
+
+- **Confident match:** the file is moved, opened from its new place, and a notification shows up with an **Undo** button.
+- **Not sure:** it stays in Downloads and you get "Move to X?" with **Move** / **Pick other** / **Leave**.
+- **No match:** it's skipped and stays in Downloads. If the document mentions a course that has no folder yet (say "Biology 101"), it offers to create `bio101` and move it there.
+- **Scanned PDF with no text:** you just get an alert that it wasn't sorted.
+
+Anything you don't answer right away waits in **Review pending…** (double-click the tray icon). Nothing is ever deleted, and every move can be undone.
+
+A few details worth knowing:
+
+- **Only real downloads count.** The browser writes `file.pdf.crdownload` and renames it when the download finishes, and only that rename triggers the tool. PDFs you copy into Downloads yourself are left alone.
+- **The PDF still opens.** After a move, the browser's own "Open file" link points to the old location, so the tool opens the file itself from wherever it ended up.
+- Besides the model, it also notices course codes in the text (`CS 101`, `cs-101`, …) and remembers which Canvas course past downloads came from. These act as extra hints and a sanity check.
+
+## LLM models
+
+**Default: Claude Haiku**, called through the [Claude Code](https://claude.com/claude-code) command-line tool, so it runs on a normal Claude subscription with no API key. Each call is a small one-off request, about 5k tokens in and 1k out. The catch is that the first page of each PDF is sent to Anthropic.
+
+**Fully local: [Ollama](https://ollama.com)**, with `--backend ollama` (uses `qwen2.5:3b` by default). Nothing leaves your machine. On a laptop's integrated GPU it answers in about 3 seconds. It's noticeably less reliable, though, so the local model never moves files on its own: it only suggests. A bigger local model (for example `qwen2.5:7b`) could do better, but that still needs testing.
+
+For comparison, on a test set of 28 real PDFs (course material mixed with personal documents that should be left alone), Haiku got all 28 right. The best local 3B setup got 21, and several of its mistakes were confidently wrong.
+
+There's no automatic fallback between the two. You choose with a flag when starting it:
+
+```powershell
+.venv\Scripts\pythonw.exe run.pyw                      # Claude Haiku
+.venv\Scripts\pythonw.exe run.pyw --model sonnet       # another Claude model
+.venv\Scripts\pythonw.exe run.pyw --backend ollama     # local model via Ollama
+```
 
 ## Setup
 
 ```powershell
-# 0. Settings: copy config.example.toml to config.toml, then set your folders and course descriptions
-# 1. Python environment (Anaconda's Python 3.13 is not on PATH, so call it directly)
-C:\Users\Ashot\anaconda3\python.exe -m venv .venv
+# settings: copy the example and fill in your folders and course descriptions
+copy config.example.toml config.toml
+
+# python environment (3.11+)
+python -m venv .venv
 .venv\Scripts\python.exe -m pip install -r requirements.txt
 
-# 2. Model: Claude Haiku needs the Claude Code VS Code extension (its claude.exe is found automatically).
-#    Only for --backend ollama: install Ollama, then
+# for Claude: have the Claude Code VS Code extension installed (its claude.exe is found automatically)
+# for the local option: install Ollama, then
 ollama pull qwen2.5:3b
 
-# 3. Check that folders and model are found
+# check that your folders and the model are found
 .venv\Scripts\python.exe -m organizer --check
 
-# 4. Run it (tray icon appears); or install it to start at login
+# try it on one file without moving anything
+.venv\Scripts\python.exe -m organizer --classify "path\to\some.pdf"
+
+# run it (tray icon), and optionally start it at login
 .venv\Scripts\pythonw.exe run.pyw
-powershell -ExecutionPolicy Bypass -File scripts\install_startup.ps1          # -Remove to undo
+powershell -ExecutionPolicy Bypass -File scripts\install_startup.ps1
 ```
 
-Use a different model (command line only):
+Tests: `.venv\Scripts\python.exe -m unittest discover -s tests -t .`
 
-```powershell
-.venv\Scripts\pythonw.exe run.pyw --backend ollama            # local qwen2.5:3b
-.venv\Scripts\pythonw.exe run.pyw --model sonnet              # another Claude model
-```
+## Possible improvements
 
-Dry run on any file, without moving it:
-
-```powershell
-.venv\Scripts\python.exe -m organizer --classify "C:\Users\Ashot\Downloads\some.pdf"
-```
-
-## What happens to a download
-
-| Situation | What you see |
-|---|---|
-| Claude is highly confident, **or** two signals agree (course code, past downloads from the same Canvas course, the model) | Moved automatically, opened from its new location, notification with **Undo** / **Show in folder** |
-| Only one signal, or signals disagree | Stays in Downloads and opens; notification **Move to X?** with **Move** / **Pick other** / **Leave** |
-| No folder fits | Opens; **Create "cs285" and move?** when a new course code is found, else **Pick folder** / **Leave** |
-| PDF has no text (scanned) or can't be read | Opens; alert that it was not sorted, with **Pick folder** / **Leave** |
-
-Unanswered questions stay in **Review pending…** (tray icon, double-click).
-
-The PDF is always opened (`behavior.auto_open`). Edge's own "Open file" link points at the old path once a file moves and Edge offers no way to update it, so the organizer opens the file itself. If sorting takes longer than `open_fallback_s` it opens the file from Downloads right away instead of making you wait.
-
-## How it decides
-
-1. **Only real downloads.** Edge writes `name.pdf.crdownload` and renames it when done; only that rename triggers processing. Files you copy or move into Downloads are ignored. (`detection.mode = "motw"` widens this to any file carrying the internet Mark of the Web.)
-2. **Text.** First `pages_to_read` pages, the PDF title, and the download source from the file's Mark of the Web (`Zone.Identifier`: Canvas page URL, query strings stripped).
-3. **Signals.**
-   - *Course code:* the folder name `cs101` matches `CS 101`, `CS101`, `cs-101`, `CompSci 101`… in the file name, title or text. Extra phrases per folder go in `[folders.aliases]`.
-   - *Learned source:* every move you confirm is remembered with its Canvas course (`…/courses/12345`). Later downloads from that course point to the same folder.
-   - *Model:* Claude Haiku (default) or the local model picks from the exact folder list (or NONE) via JSON-schema output. It sees each folder's course description from `[folders.descriptions]`, three example file names and your recent decisions. It must quote its evidence from the document; if the quote isn't really in the document, its confidence drops to low.
-4. **Decision table** in `organizer/classifier.py::decide`. Two agreeing signals move automatically. Claude's own high confidence also moves automatically (`auto_move_on_llm_alone`); the local model alone only ever suggests.
-
-If the model is unavailable (for example, offline), the organizer still uses course codes and learned sources, but asks before every move unless both agree.
-
-## Files
-
-- `config.toml`: folders, course descriptions, behaviour (the model is chosen on the command line, not here). Destinations are subfolders of `roots` matching `include_patterns`, plus `extra`, plus folders you created or picked through the app.
-- `state/` (not tracked): `app.log`, `moves.jsonl` (undo log), `history.jsonl` (your decisions), `learned_folders.json`.
-- `organizer/`: `watcher.py` detection · `motw.py` Mark of the Web · `extract.py` PDF text · `folders.py` destinations and course codes · `history.py` learning · `classifier.py` decision and prompt · `claude_client.py` / `ollama_client.py` models · `actions.py` move/undo/open · `notifier.py` + `ui.py` + `tray.py` interface · `app.py` wiring.
-
-## Tests
-
-```powershell
-.venv\Scripts\python.exe -m unittest discover -s tests -t .
-```
-
-Future work is tracked in [docs/ROADMAP.md](docs/ROADMAP.md).
+- **Cheaper Claude calls:** use the CLI's minimal `--bare` mode, reuse a cached base conversation that holds the folder info so each call only pays for the new document, and sort several downloads in one call when they arrive together.
+- **Changing settings without a restart:** reload `config.toml` and the prompt automatically when they change.
+- **Scanned PDFs:** read them with OCR or a vision model instead of just raising an alert.
+- **Lighter background use:** run at below-normal priority so it never competes with whatever you're doing.
+- **macOS and Linux support.**
