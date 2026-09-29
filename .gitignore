@@ -6,3 +6,4 @@ eval_results.csv
 config.toml
 conversation_usage.csv
 prompt_folders_comparison.txt
+scratchpad/
