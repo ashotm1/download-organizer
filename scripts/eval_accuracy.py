@@ -14,6 +14,7 @@ or written anywhere that gets committed, since file names may reveal real course
 """
 import argparse
 import csv
+import logging
 import sys
 import time
 from pathlib import Path
@@ -30,6 +31,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", default=None, help="CSV output path (default: state/eval_accuracy.csv)")
     args = parser.parse_args()
+
+    # So organizer.claude_client's per-call usage logging (tokens/cost) is visible when run
+    # standalone; the real app configures this itself in __main__.py's _setup_logging().
+    logging.basicConfig(level=logging.INFO, format="%(name)s: %(message)s")
 
     cfg = cfgmod.load()
     out_path = Path(args.out) if args.out else cfg.state_dir / "eval_accuracy.csv"
