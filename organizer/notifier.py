@@ -1,5 +1,7 @@
 """Windows toast notifications with buttons; falls back to Tk popups."""
 import logging
+import winreg
+from pathlib import Path
 from typing import Callable
 
 from .ui import UI
@@ -7,16 +9,32 @@ from .ui import UI
 log = logging.getLogger(__name__)
 
 APP_NAME = "Download Organizer"
+# Our own app ID, so toasts show under our name instead of the library's default (Command Prompt).
+AUMID = "DownloadOrganizer"
+AUMID_KEY = rf"Software\Classes\AppUserModelId\{AUMID}"
+
+
+def register_aumid(state_dir: Path) -> None:
+    """Register the app ID under HKCU (per user, no admin). Idempotent; run at every start."""
+    from .tray import icon_image
+    icon = state_dir / "icon.ico"
+    icon_image().save(icon, format="ICO", sizes=[(16, 16), (32, 32), (48, 48), (64, 64)])
+    with winreg.CreateKeyEx(winreg.HKEY_CURRENT_USER, AUMID_KEY) as key:
+        winreg.SetValueEx(key, "DisplayName", 0, winreg.REG_SZ, APP_NAME)
+        winreg.SetValueEx(key, "IconUri", 0, winreg.REG_SZ, str(icon.resolve()))
 
 
 class Notifier:
-    def __init__(self, mode: str, ui: UI):
+    def __init__(self, mode: str, ui: UI, state_dir: Path):
         self.ui = ui
         self._toaster = None
         if mode == "toast":
             try:
                 from windows_toasts import InteractableWindowsToaster
-                self._toaster = InteractableWindowsToaster(APP_NAME)
+                register_aumid(state_dir)
+                self._toaster = InteractableWindowsToaster(APP_NAME, AUMID)
+                # Toasts left from an earlier run have no live process behind their buttons.
+                self._toaster.clear_toasts()
             except Exception as e:
                 log.warning("toasts unavailable, using popups: %s", e)
 

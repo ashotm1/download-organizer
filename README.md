@@ -12,7 +12,7 @@ The model needs enough context about your folders to decide well. For every dest
 - a few example file names that already live there
 - the files you've recently filed yourself, so it picks up your habits
 
-Then it gets the downloaded document (file name, title, where it was downloaded from, and the first page of text) and has to pick exactly one folder from the list, or answer NONE. It also has to quote the words from the document that justify its choice. If the quote isn't actually in the document, the answer isn't trusted.
+Then it gets the downloaded document (file name, title, where it was downloaded from, and the start of its text: up to 2,000 characters from the first two pages) and has to pick exactly one folder from the list, or answer NONE. It also has to quote the words from the document that justify its choice. If the quote isn't actually in the document, the answer isn't trusted.
 
 What happens next:
 
@@ -21,7 +21,9 @@ What happens next:
 - **No match:** it's skipped and stays in Downloads. If the document mentions a course that has no folder yet (say "Biology 101"), it offers to create `bio101` and move it there.
 - **Scanned PDF with no text:** you just get an alert that it wasn't sorted.
 
-Anything you don't answer right away waits in **Review pending…** (double-click the tray icon). Nothing is ever deleted, and every move can be undone.
+Anything you don't answer right away waits in **Review pending…** (click the tray icon). Nothing is ever deleted, and every move can be undone.
+
+Notifications show up as **Download Organizer**, with their own on/off switch under Settings → System → Notifications. Their buttons only work while the app that sent them is running, so the app clears its old notifications whenever it starts. The Review pending list also starts empty after a restart; the files it held are still in Downloads, untouched.
 
 A few details worth knowing:
 
@@ -31,11 +33,11 @@ A few details worth knowing:
 
 ## LLM models
 
-**Default: Claude Haiku**, called through the [Claude Code](https://claude.com/claude-code) command-line tool, so it runs on a normal Claude subscription with no API key. Each call is a small one-off request, about 5k tokens in and 1k out. The catch is that the first page of each PDF is sent to Anthropic.
+**Default: Claude Haiku**, called through the [Claude Code](https://claude.com/claude-code) command-line tool, so it runs on a normal Claude subscription with no API key. Each call is a small one-off request, about 5k tokens in and 1k out. The catch is that the start of each PDF's text is sent to Anthropic.
 
 **Fully local: [Ollama](https://ollama.com)**, with `--backend ollama` (uses `qwen2.5:3b` by default). Nothing leaves your machine. On a laptop's integrated GPU it answers in about 3 seconds. It's noticeably less reliable, though, so the local model never moves files on its own: it only suggests. A bigger local model (for example `qwen2.5:7b`) could do better, but that still needs testing.
 
-For comparison, on a test set of 28 real PDFs (course material mixed with personal documents that should be left alone), Haiku got all 28 right. The best local 3B setup got 21, and several of its mistakes were confidently wrong.
+For comparison, on a test set of 28 real PDFs (course material mixed with personal documents that should be left alone), Haiku got all 28 right. The best local 3B setup got 21, and several of its mistakes were confidently wrong. A later rerun of Haiku on 33 course PDFs got 32 right.
 
 There's no automatic fallback between the two. You choose with a flag when starting it:
 
@@ -55,7 +57,7 @@ copy config.example.toml config.toml
 python -m venv .venv
 .venv\Scripts\python.exe -m pip install -r requirements.txt
 
-# for Claude: have the Claude Code VS Code extension installed (its claude.exe is found automatically)
+# for Claude: install Claude Code and sign in (a `claude` on PATH, or the VS Code extension's claude.exe, is found automatically)
 # for the local option: install Ollama, then
 ollama pull qwen2.5:3b
 
@@ -70,9 +72,19 @@ ollama pull qwen2.5:3b
 powershell -ExecutionPolicy Bypass -File scripts\install_startup.ps1
 ```
 
+To restart it, choose **Quit** from the tray menu, then run `run.pyw` again.
+
+To uninstall, quit it, then remove the login shortcut and the notification registration (moved files stay where they are; `state\moves.jsonl` records where each one came from):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\install_startup.ps1 -Remove
+```
+
 Tests: `.venv\Scripts\python.exe -m unittest discover -s tests -t .`
 
 ## Possible improvements
+
+More detail, and other deferred ideas, in [docs/ROADMAP.md](docs/ROADMAP.md).
 
 - **Cheaper Claude calls:** use the CLI's minimal `--bare` mode, reuse a cached base conversation that holds the folder info so each call only pays for the new document, and sort several downloads in one call when they arrive together.
 - **Changing settings without a restart:** reload `config.toml` and the prompt automatically when they change.

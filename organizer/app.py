@@ -56,7 +56,7 @@ class App:
         self.llm = build_llm(cfg)
         self.classifier = Classifier(cfg, self.llm, self.history)
         self.ui = UI()
-        self.notifier = Notifier(cfg.ui, self.ui)
+        self.notifier = Notifier(cfg.ui, self.ui, cfg.state_dir)
         self.jobs = ThreadPoolExecutor(1, thread_name_prefix="download")  # one at a time: CPU-bound model
         self.work = ThreadPoolExecutor(1, thread_name_prefix="action")    # user actions never wait on the model
         self.watcher = DownloadWatcher(cfg.downloads, cfg.extensions, cfg.detection_mode, self.on_download)

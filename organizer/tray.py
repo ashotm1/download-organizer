@@ -3,7 +3,7 @@ from PIL import Image, ImageDraw
 import pystray
 
 
-def _icon_image() -> Image.Image:
+def icon_image() -> Image.Image:
     img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
     d.rounded_rectangle((4, 4, 60, 60), radius=12, fill=(37, 99, 235))
@@ -24,4 +24,4 @@ def create(app) -> pystray.Icon:
         pystray.Menu.SEPARATOR,
         pystray.MenuItem("Quit", lambda _i, _m: app.quit()),
     )
-    return pystray.Icon("download_organizer", _icon_image(), "Download Organizer", menu)
+    return pystray.Icon("download_organizer", icon_image(), "Download Organizer", menu)
