@@ -3,7 +3,7 @@
 Read README.md for what the app does and how it decides. Deferred work lives in docs/ROADMAP.md: add to it rather than implementing unrequested features.
 
 ## Environment
-- Windows 11, no dedicated GPU (Intel Arc 130V integrated), 16 GB RAM. Python is Anaconda's 3.13 at `C:\Users\Ashot\anaconda3\python.exe` (not on PATH); always use `.venv\Scripts\python.exe`.
+- Windows 11, no dedicated GPU (Intel Arc 130V integrated), 16 GB RAM. Python is 3.14 from the Python Install Manager (`py`), on PATH via `%LOCALAPPDATA%\Python\bin`; `.venv` is built from it. Always use `.venv\Scripts\python.exe`.
 - Model: Claude Haiku via the Claude Code CLI (`claude -p`, the user's subscription) by default. `--backend ollama` switches to local `qwen2.5:3b` at `http://127.0.0.1:11434` (not `localhost`, which stalls on IPv6); the Arc iGPU is enabled by the user environment variable `OLLAMA_IGPU_ENABLE=1`.
 - Browser: Edge. Downloads land in `C:\Users\Ashot\Downloads`; course folders are `C:\Users\Ashot\OneDrive\Documents\Ashot\<code>` (OneDrive: never read file contents during discovery, names/stat only).
 
