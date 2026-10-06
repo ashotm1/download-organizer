@@ -12,7 +12,7 @@ The model needs enough context about your folders to decide well. For every dest
 - a few example file names that already live there
 - the files you've recently filed yourself, so it picks up your habits
 
-Then it gets the downloaded document (file name, title, where it was downloaded from, and the start of its text: up to 2,000 characters from the first two pages) and has to pick exactly one folder from the list, or answer NONE. It also has to quote the words from the document that justify its choice. If the quote isn't actually in the document, the answer isn't trusted.
+Then it gets the downloaded document (file name, title, where it was downloaded from, and the start of its text: up to 2,000 characters from the first two pages) and has to pick exactly one folder from the list, or answer NONE. It also gives a short reason (what the document is about and why it fits), which appears in the notification and is saved in the history so you can review its choices later.
 
 What happens next:
 

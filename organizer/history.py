@@ -41,10 +41,11 @@ class History:
                 f.write(json.dumps(rec, ensure_ascii=False) + "\n")
 
     def add(self, *, file: str, folder: Path, how: str, move_id: str | None,
-            source_key: str | None, source_url: str | None, snippet: str) -> None:
+            source_key: str | None, source_url: str | None, snippet: str, reason: str = "") -> None:
         self._append({
             "ts": time.strftime("%Y-%m-%dT%H:%M:%S"), "file": file, "folder": str(folder), "how": how,
             "move_id": move_id, "source_key": source_key, "source_url": source_url, "snippet": snippet[:200],
+            "reason": reason,
         })
 
     def mark_undone(self, move_id: str) -> None:

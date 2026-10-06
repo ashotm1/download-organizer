@@ -30,6 +30,7 @@ class Pending:
     folder: fl.Folder | None = None
     suggested_new: str | None = None
     doc: DocInfo | None = None
+    model_reason: str = ""  # the model's own explanation, kept in history for later review
 
     def suggestion(self) -> str:
         if self.kind == "ask" and self.folder:
@@ -147,6 +148,7 @@ class App:
             return
 
         decision = self.classifier.classify(self.folders(), doc)
+        model_reason = (decision.signals.get("llm") or {}).get("reason", "")
         if decision.tier == AUTO:
             try:
                 move_id, dest = self.mover.move(path, decision.folder.path)
@@ -155,18 +157,21 @@ class App:
                 decision.tier, decision.reason = ASK, f"{decision.reason} (move failed: {e})"
             else:
                 self.history.add(file=name, folder=decision.folder.path, how="auto", move_id=move_id,
-                                 source_key=doc.source_key, source_url=doc.source_url, snippet=doc.text)
+                                 source_key=doc.source_key, source_url=doc.source_url, snippet=doc.text,
+                                 reason=model_reason)
                 opener.open(dest)
                 self._notify_moved(name, dest, move_id, decision.folder.key, decision.reason)
                 return
 
         opener.open(path)
         if decision.tier == ASK:
-            p = self._add_pending(Pending(self._new_id(), path, "ask", folder=decision.folder, doc=doc))
+            p = self._add_pending(Pending(self._new_id(), path, "ask", folder=decision.folder, doc=doc,
+                                                model_reason=model_reason))
             self._notify_pending(p, f"Move to {decision.folder.key}?", f"{name}\n{decision.reason}",
                                  [("Move", "primary"), ("Pick other", "pick"), ("Leave", "leave")])
         else:
-            p = self._add_pending(Pending(self._new_id(), path, "no_match", suggested_new=decision.suggested_new, doc=doc))
+            p = self._add_pending(Pending(self._new_id(), path, "no_match", suggested_new=decision.suggested_new, doc=doc,
+                                                model_reason=model_reason))
             parent = suggested_parent(self.cfg)
             if decision.suggested_new and parent:
                 self._notify_pending(p, "No matching folder",
@@ -259,7 +264,7 @@ class App:
         doc = p.doc
         self.history.add(file=p.path.name, folder=dest_dir, how=how, move_id=move_id,
                          source_key=doc.source_key if doc else None, source_url=doc.source_url if doc else None,
-                         snippet=doc.text if doc else "")
+                         snippet=doc.text if doc else "", reason=p.model_reason)
         self._drop_pending(p.id)
         self._notify_moved(p.path.name, dest, move_id, dest_dir.name, "")
 

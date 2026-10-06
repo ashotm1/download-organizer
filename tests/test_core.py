@@ -9,7 +9,7 @@ from pathlib import Path
 from organizer import folders as fl
 from organizer import motw
 from organizer.actions import Mover
-from organizer.classifier import ASK, AUTO, NO_MATCH, NONE, DocInfo, LlmResult, decide, evidence_is_grounded
+from organizer.classifier import ASK, AUTO, NO_MATCH, NONE, LlmResult, decide
 from organizer.history import History
 from organizer.watcher import DownloadWatcher, wait_until_complete
 
@@ -42,19 +42,6 @@ class DecideTests(unittest.TestCase):
     def test_nothing_is_no_match(self):
         self.assertEqual(decide(None, None, llm(NONE), True)[0], NO_MATCH)
         self.assertEqual(decide(None, None, None, True)[0], NO_MATCH)
-
-
-class EvidenceTests(unittest.TestCase):
-    DOC = DocInfo("p1.pdf", "Goal: extend the j-- language by adding support for arithmetic operators", "", None, None)
-
-    def test_quote_from_document_is_grounded(self):
-        self.assertTrue(evidence_is_grounded("extend the j-- language", self.DOC))
-
-    def test_invented_quote_is_not_grounded(self):
-        self.assertFalse(evidence_is_grounded("C programs, pointers and bit operators", self.DOC))
-
-    def test_too_short_is_not_grounded(self):
-        self.assertFalse(evidence_is_grounded("j--", self.DOC))
 
 
 class FolderRuleTests(unittest.TestCase):

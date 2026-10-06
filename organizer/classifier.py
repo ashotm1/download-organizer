@@ -1,6 +1,5 @@
 """Combines course-code rules, learned sources and the local model into one decision."""
 import logging
-import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -26,17 +25,17 @@ Rules:
 3. Personal and administrative documents (forms, IDs, resumes, receipts, legal, financial or
    employment papers) are always NONE, with an empty new_folder_name.
 4. If nothing clearly matches, answer NONE. Prefer NONE over a guess.
-5. evidence: copy 3 to 12 words exactly from the document that justify your answer.
+5. reason: a few words on what the document is about and why it fits the folder you chose (or
+   none). It is shown to the student so they can check your choice at a glance.
 
 Examples (the folders here are made up):
-- "Biology 101 Lab 3: Cell Division" -> folder NONE, new_folder_name "bio101", evidence "Biology 101 Lab 3: Cell Division"
-- "Form W-4 Employee's Withholding Certificate" -> folder NONE, new_folder_name "", evidence "Employee's Withholding Certificate"
-- "Homework 2: implement a linked list in C", with a folder described as "Programming in C" -> that folder, evidence "implement a linked list in C"
+- "Biology 101 Lab 3: Cell Division" -> folder NONE, new_folder_name "bio101",
+  reason "Biology 101 lab on cell division; no biology folder"
+- "Form W-4 Employee's Withholding Certificate" -> folder NONE, new_folder_name "",
+  reason "US tax withholding form, not course material"
+- "Homework 2: implement a linked list in C", with a folder described as "Programming in C" -> that folder,
+  reason "homework on linked lists in C, matches Programming in C"
 """
-# Quoted evidence must mostly consist of words that really occur in the document.
-EVIDENCE_MIN_OVERLAP = 0.8
-_WORD = re.compile(r"[^\W_]+", re.UNICODE)
-
 
 @dataclass
 class DocInfo:
@@ -143,12 +142,12 @@ class Classifier:
         schema = {
             "type": "object",
             "properties": {
-                "evidence": {"type": "string"},
+                "reason": {"type": "string"},
                 "folder": {"type": "string", "enum": [f.key for f in folders] + [NONE]},
                 "confidence": {"type": "string", "enum": ["high", "medium", "low"]},
                 "new_folder_name": {"type": "string"},
             },
-            "required": ["evidence", "folder", "confidence", "new_folder_name"],
+            "required": ["reason", "folder", "confidence", "new_folder_name"],
         }
         llm = self.llm
         try:
@@ -159,12 +158,8 @@ class Classifier:
         keys = {f.key for f in folders}
         folder = out.get("folder") if out.get("folder") in keys else NONE
         confidence = out.get("confidence") if out.get("confidence") in ("high", "medium", "low") else "low"
-        evidence = str(out.get("evidence", "")).strip()
-        if folder != NONE and not evidence_is_grounded(evidence, doc):
-            # The model justified a folder with words that are not in the document: don't trust it.
-            log.info("%s: evidence %r not found in document; confidence %s -> low", doc.filename, evidence, confidence)
-            confidence = "low"
-        return LlmResult(folder, confidence, evidence, str(out.get("new_folder_name", "")), llm.name, llm.trusted)
+        reason = str(out.get("reason", "")).strip()
+        return LlmResult(folder, confidence, reason, str(out.get("new_folder_name", "")), llm.name, llm.trusted)
 
     def classify(self, folders: list[Folder], doc: DocInfo) -> Decision:
         scores = fl.score(folders, doc.filename, doc.title, doc.text)
@@ -182,15 +177,6 @@ class Classifier:
                    "llm": llm.__dict__ if llm else None}
         log.info("%s -> %s %s (%s) signals=%s", doc.filename, tier, key, reason, signals)
         return Decision(tier, next((f for f in folders if f.key == key), None), reason, suggested, signals)
-
-
-def evidence_is_grounded(evidence: str, doc: DocInfo) -> bool:
-    """True if at least EVIDENCE_MIN_OVERLAP of the quote's words occur in the document."""
-    quote = [w for w in _WORD.findall(evidence.lower()) if len(w) > 1]
-    if len(quote) < 2:
-        return False
-    present = set(_WORD.findall(f"{doc.filename} {doc.title} {doc.text}".lower()))
-    return sum(w in present for w in quote) / len(quote) >= EVIDENCE_MIN_OVERLAP
 
 
 def suggested_parent(cfg: Config) -> Path | None:
