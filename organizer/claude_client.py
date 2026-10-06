@@ -35,7 +35,8 @@ class ClaudeCode:
     """Same interface as Ollama: status(), warmup(), chat_json()."""
 
     # Accurate enough to move files on its own confidence: 28/28 in the 2026-09-23 evaluation,
-    # re-confirmed 32/33 on 2026-09-28 after adding --strict-mcp-config (see docs/ROADMAP.md).
+    # re-confirmed 33/33 on 2026-09-28 after adding --strict-mcp-config and 37/37 on 2026-10-05
+    # with thinking off (see docs/ROADMAP.md).
     trusted = True
 
     def __init__(self, model: str, exe: str, timeout_s: float):
@@ -58,6 +59,8 @@ class ClaudeCode:
             raise LlmError("Claude Code CLI not found")
         cmd = [self.exe, "-p", "--model", self.model, "--tools", "", "--no-session-persistence",
                "--strict-mcp-config", "--output-format", "json", "--system-prompt", system,
+               # Thinking is on by default with a large budget; off, calls take half the time at the same accuracy.
+               "--settings", json.dumps({"alwaysThinkingEnabled": False}),
                "--json-schema", json.dumps(schema)]
         try:
             proc = subprocess.run(cmd, input=user, capture_output=True, text=True, encoding="utf-8",
