@@ -24,8 +24,6 @@ class Config:
     num_ctx: int
     extensions: list[str]
     detection_mode: str
-    auto_open: bool
-    open_fallback_s: float
     auto_move_on_llm_alone: bool
     pages_to_read: int
     max_chars: int
@@ -69,8 +67,6 @@ def load(path: Path | None = None) -> Config:
         num_ctx=int(ollama.get("num_ctx", 4096)),
         extensions=[e.lower() for e in detection.get("extensions", [".pdf"])],
         detection_mode=mode,
-        auto_open=bool(behavior.get("auto_open", True)),
-        open_fallback_s=float(behavior.get("open_fallback_s", 20)),
         auto_move_on_llm_alone=bool(behavior.get("auto_move_on_llm_alone", False)),
         pages_to_read=int(behavior.get("pages_to_read", 2)),
         max_chars=int(behavior.get("max_chars", 2000)),

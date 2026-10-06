@@ -101,31 +101,3 @@ def reveal(path: Path) -> None:
         os.startfile(str(path))
     else:
         subprocess.Popen(f'explorer /select,"{path}"')
-
-
-class Opener:
-    """Opens a download exactly once: from its final location, or from Downloads if sorting is slow."""
-
-    def __init__(self, path: Path, enabled: bool, fallback_s: float):
-        self._path, self._enabled, self._done = path, enabled, False
-        self._lock = threading.Lock()
-        self._timer = None
-        if enabled and fallback_s > 0:
-            self._timer = threading.Timer(fallback_s, self.open, args=(path,))
-            self._timer.daemon = True
-            self._timer.start()
-
-    def open(self, path: Path | None = None) -> None:
-        with self._lock:
-            if self._done or not self._enabled:
-                return
-            self._done = True
-        if self._timer:
-            self._timer.cancel()
-        open_path(path or self._path)
-
-    def cancel(self) -> None:
-        with self._lock:
-            self._done = True
-        if self._timer:
-            self._timer.cancel()

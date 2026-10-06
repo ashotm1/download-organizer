@@ -16,7 +16,7 @@ Then it gets the downloaded document (file name, title, where it was downloaded 
 
 What happens next:
 
-- **Confident match:** the file is moved, opened from its new place, and a notification shows up with an **Undo** button.
+- **Confident match:** the file is moved and a notification shows up with an **Undo** button.
 - **Not sure:** it stays in Downloads and you get "Move to X?" with **Move** / **Pick other** / **Leave**.
 - **No match:** it's skipped and stays in Downloads. If the document mentions a course that has no folder yet (say "Biology 101"), it offers to create `bio101` and move it there.
 - **Scanned PDF with no text:** you just get an alert that it wasn't sorted.
@@ -28,7 +28,6 @@ Notifications show up as **Download Organizer**, with their own on/off switch un
 A few details worth knowing:
 
 - **Only real downloads count.** The browser writes `file.pdf.crdownload` and renames it when the download finishes, and only that rename triggers the tool. PDFs you copy into Downloads yourself are left alone.
-- **The PDF still opens.** After a move, the browser's own "Open file" link points to the old location, so the tool opens the file itself from wherever it ended up.
 - Besides the model, it also notices course codes in the text (`CS 101`, `cs-101`, …) and remembers which Canvas course past downloads came from. These act as extra hints and a sanity check.
 
 ## LLM models

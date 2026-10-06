@@ -43,8 +43,6 @@ extensions = [".pdf"]
 mode = "strict"
 
 [behavior]
-auto_open = true              # always open the PDF, from its final location when it was moved
-open_fallback_s = 20          # if sorting takes longer than this, open it from Downloads right away
 auto_move_on_llm_alone = true  # Claude may auto-move on its own high confidence; the local model never does
 pages_to_read = 2
 max_chars = 2000

@@ -133,7 +133,6 @@ class App:
         if not from_temp and not (mark and mark.from_internet):
             log.info("skipping %s: not a browser download", path.name)
             return
-        opener = actions.Opener(path, self.cfg.auto_open, self.cfg.open_fallback_s)
         name = path.name
         ex = extract(path, self.cfg.pages_to_read, self.cfg.max_chars)
         doc = DocInfo(name, ex.text, ex.title, motw.source_key(mark), motw.clean_url(mark.referrer_url or mark.host_url) if mark else None)
@@ -141,7 +140,6 @@ class App:
         if ex.error or not ex.has_text(self.cfg.min_text_chars):
             kind = "error" if ex.error else "no_text"
             p = self._add_pending(Pending(self._new_id(), path, kind, doc=doc))
-            opener.open(path)
             detail = f"Couldn't read it ({ex.error})." if ex.error else "It has no text layer (scanned?)."
             self._notify_pending(p, f"Not sorted: {name}", f"{detail} It stays in Downloads.",
                                  [("Pick folder", "pick"), ("Leave", "leave")])
@@ -159,11 +157,9 @@ class App:
                 self.history.add(file=name, folder=decision.folder.path, how="auto", move_id=move_id,
                                  source_key=doc.source_key, source_url=doc.source_url, snippet=doc.text,
                                  reason=model_reason)
-                opener.open(dest)
                 self._notify_moved(name, dest, move_id, decision.folder.key, decision.reason)
                 return
 
-        opener.open(path)
         if decision.tier == ASK:
             p = self._add_pending(Pending(self._new_id(), path, "ask", folder=decision.folder, doc=doc,
                                                 model_reason=model_reason))
