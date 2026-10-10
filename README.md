@@ -16,7 +16,7 @@ Then it gets the downloaded document (file name, title, where it was downloaded 
 
 What happens next:
 
-- **Confident match:** the file is moved and a notification shows up with an **Undo** button.
+- **Confident match:** the file is moved and a notification shows up with **Open**, **Show in folder** and **Undo** buttons. (The browser's own "Open file" link still points to Downloads, so use **Open** here.)
 - **Not sure:** it stays in Downloads and you get "Move to X?" with **Move** / **Pick other** / **Leave**.
 - **No match:** it's skipped and stays in Downloads. If the document mentions a course that has no folder yet (say "Biology 101"), it offers to create `bio101` and move it there.
 - **Scanned PDF with no text:** you just get an alert that it wasn't sorted.

@@ -182,10 +182,12 @@ class App:
         def on_choice(key: str) -> None:
             if key == "undo":
                 self.work.submit(self._safe, self._undo, move_id)
+            elif key == "open":
+                actions.open_path(dest)
             elif key in ("reveal", "body"):
                 actions.reveal(dest)
         self.notifier.show(f"Moved to {folder_label}", f"{name}\n{reason}",
-                           [("Undo", "undo"), ("Show in folder", "reveal")], on_choice)
+                           [("Open", "open"), ("Show in folder", "reveal"), ("Undo", "undo")], on_choice)
 
     def _notify_pending(self, p: Pending, title: str, body: str, buttons: list[tuple[str, str]]) -> None:
         def on_choice(key: str) -> None:
