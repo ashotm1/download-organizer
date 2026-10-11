@@ -30,6 +30,7 @@ from organizer.history import History
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", default=None, help="CSV output path (default: state/eval_accuracy.csv)")
+    parser.add_argument("--model", default="", help="model name, same as run.pyw --model (default: the app's default)")
     args = parser.parse_args()
 
     # So organizer.claude_client's per-call usage logging (tokens/cost) is visible when run
@@ -37,6 +38,7 @@ def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(name)s: %(message)s")
 
     cfg = cfgmod.load()
+    cfg.model = args.model or cfg.model
     out_path = Path(args.out) if args.out else cfg.state_dir / "eval_accuracy.csv"
 
     folders = fl.discover(cfg, learned=[])
