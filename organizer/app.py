@@ -80,6 +80,7 @@ class App:
         self.ui.run()  # blocks until quit
 
     def quit(self) -> None:
+        log.info("quit requested")  # a start with no quit line before it means the process was killed
         self.watcher.stop()
         if self.tray:
             self.tray.stop()
